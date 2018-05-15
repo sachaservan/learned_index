@@ -59,15 +59,16 @@ def predict_recursive(x, w, d, node):
             
 if __name__ == "__main__": 
     parser = OptionParser()
+    parser.add_option("-f", "--file", dest="file", type="str", default="data_1.csv", help="data file")
     parser.add_option("-d", "--depth", dest="depth", type="int", default=2, help="depth of the model tree")
     parser.add_option("-w", "--width", dest="width", type="int", default=10, help="width of the model layers")
 
     (options, args) = parser.parse_args()
 
     # load csv and columns
-    df = pd.read_csv("age.csv")
+    df = pd.read_csv(options.file)
     Y = df['pos']
-    X = df['age']
+    X = df['value']
     X=X.values.reshape(len(X),1)
     Y=Y.values.reshape(len(Y),1)
 
@@ -92,7 +93,7 @@ if __name__ == "__main__":
 
     # predict the cdf
     predictions = []
-    testX = np.linspace(15, 104, 10000)
+    testX = np.linspace(np.min(X), np.max(X), 10000)
     for i in range(len(testX)):
         pred = predict_recursive(testX[i], w, d, node)
         predictions.append(pred)
