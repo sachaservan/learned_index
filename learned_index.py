@@ -23,19 +23,20 @@ def build_recursive(X, Y, w, d, current_d):
     reg.fit(X, Y)
     node = Node()   
     
-    node.m = reg.coef_[0][0]
-    node.b = reg.intercept_[0]
-    pred = X * node.m + node.b
+    node.m = reg.coef_[0][0] # slope
+    node.b = reg.intercept_[0] # intercept
+    pred = X * node.m + node.b # gen prediction array using mx+b formula for Y values
     node.min = np.min(pred)
     node.max = np.max(pred)
     
+    # if desired depth not reached
     if current_d != d and node.max - node.min > 0:
         bins = np.floor(((pred - node.min) / (node.max - node.min)) * (w-1))
         bins = bins.astype(int)
         for wi in range(w):
-            mask = bins == wi
-            Xwi = X[mask]
-            Ywi = Y[mask]
+            mask = bins == wi # list of bins which equal wi
+            Xwi = X[mask] # list of values that fall into the bin
+            Ywi = Y[mask] 
             
             if len(Xwi) > 0 and len(Ywi) > 0:
                 child_node = build_recursive(Xwi, Ywi, w, d, current_d + 1)
@@ -68,10 +69,10 @@ if __name__ == "__main__":
     # load csv and columns
     df = pd.read_csv(options.file)
     Y = df['pos']
-    X = df['value']
+    X = df['value1']
     X=X.values.reshape(len(X),1)
     Y=Y.values.reshape(len(Y),1)
-
+       
     # setup figures
     f1 = plt.figure()
     f2 = plt.figure()
@@ -99,7 +100,7 @@ if __name__ == "__main__":
         predictions.append(pred)
      
     # plot the predicted cdf
-    ax1.plot(testX, predictions, color='black',linewidth=1)
+    ax1.plot(testX, predictions, color='blue',linewidth=1)
 
     # plot the histogram 
     n, bins, patches = ax2.hist(X, 20, facecolor='g', alpha=0.5)
@@ -118,7 +119,7 @@ if __name__ == "__main__":
         predicted_hist.append(upper)
         counts.append(c)
         counts.append(c)
-        print("count of " + str(lower) + " - " + str(upper) + " = " + str(c))
-    ax2.plot(predicted_hist, counts, color='black', linewidth=1)
+        print("count of " + str(lower) + " to " + str(upper) + " = " + str(c))
+    ax2.plot(predicted_hist, counts, color='blue', linewidth=1)
 
     plt.show()
