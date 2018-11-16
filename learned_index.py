@@ -69,7 +69,7 @@ if __name__ == "__main__":
     # load csv and columns
     df = pd.read_csv(options.file)
     Y = df['pos']
-    X = df['value1']
+    X = df['value']
     X=X.values.reshape(len(X),1)
     Y=Y.values.reshape(len(Y),1)
        
