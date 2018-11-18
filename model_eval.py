@@ -73,7 +73,7 @@ if True:
 
 
 df = pd.read_csv("data_2d_corr.csv")
-df = df[(df['attr1'] > 40) & (df['attr1'] < 60) ]
+df = df[(df['attr1'] > 50) & (df['attr1'] < 60) ]
 a1 = df['attr1']
 a2 = df['attr2']
 a1 = a1.values.reshape(len(a1),1)
