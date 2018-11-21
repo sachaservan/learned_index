@@ -68,7 +68,7 @@ class PrintDot(keras.callbacks.Callback):
     if epoch % 10 == 0:
       [loss, mae] = model.evaluate(test_data, test_labels, verbose=0)
       print("Testing set Mean Abs Error: {:7.2f}".format(mae))
-      model.save_weights('./checkpoints/my_checkpoint')
+      model.save_weights('./checkpoints/gcp_2_checkpoint')
 
 EPOCHS = 2000
 
