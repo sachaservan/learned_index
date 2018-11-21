@@ -8,9 +8,19 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import pickle
+
 import json
+from matplotlib.colors import LogNorm
+import matplotlib.patches as patches
 
 print(tf.__version__)
+
+def norm(v, minv, maxv):
+  if (v == 0):
+    return 0
+  n = (v - minv) / (maxv - minv)
+  alpha = 0.05
+  return (alpha + pow(n, 1.0 / 3.0) * (1.0 - alpha))
 
 df = pd.read_csv('query_data.csv')
 train, test = train_test_split(df, test_size=0.2)
@@ -30,9 +40,9 @@ test_data = (test_data - mean) / std
 
 def build_model():
   model = keras.Sequential([
-    keras.layers.Dense(128, activation=tf.nn.relu,
-                       input_shape=(train_data.shape[1],)),
-    keras.layers.Dense(128, activation=tf.nn.relu),
+    keras.layers.Dense(512, activation=tf.nn.relu, input_shape=(train_data.shape[1],)),
+    keras.layers.Dense(256, activation=tf.sigmoid),
+    keras.layers.Dense(512, activation=tf.nn.relu, kernel_constraint=keras.constraints.NonNeg()),
     keras.layers.Dense(1)
   ])
 
@@ -64,20 +74,75 @@ def plot_history(history):
   plt.plot(history['epoch'], np.array(history['val_mean_absolute_error']),
            label = 'Val loss')
   plt.legend()
-  plt.ylim([0, 200])
+  #plt.ylim([0, 75])
 
-if True:
-
+if False:
   plot_history(history)
   plt.show()
 
 
 df = pd.read_csv("data_2d_corr.csv")
-df = df[(df['attr1'] > 50) & (df['attr1'] < 60) ]
+#df = df[(df['attr1'] > 55) & (df['attr1'] < 60) ]
 a1 = df['attr1']
 a2 = df['attr2']
-a1 = a1.values.reshape(len(a1),1)
-a2 = a2.values.reshape(len(a2),1)
+
+xmax = df['attr1'].max()
+xmin = df['attr1'].min()
+ymax = df['attr2'].max()
+ymin = df['attr2'].min()
+b = 20
+bins = []
+bins_est = []
+
+max_cnt = float('-inf')
+min_cnt = float('inf')
+
+max_est_cnt = float('-inf')
+min_est_cnt = float('inf')
+
+for bx in range(b):
+  for by in range(b):
+    lx = xmin + ((xmax - xmin) / b) * bx
+    ux = xmin + ((xmax - xmin) / b) * (1 + bx)
+    ly = ymin + ((ymax - ymin) / b) * by
+    uy = ymin + ((ymax - ymin) / b) * (1 + by)
+    cnt = df[(df['attr1'] >= lx) & (df['attr1'] < ux) & (df['attr2'] >= ly) & (df['attr2'] < uy)].count()[0]
+    bins.append((lx, ux, ly, uy, cnt))
+    max_cnt = max(max_cnt, cnt)
+    min_cnt = min(min_cnt, cnt)
+
+    a = np.array([lx, ux, ly, uy]).reshape((1,4))
+    a = (a - mean) / std
+    c = model.predict(a)[0][0]
+    bins_est.append((lx, ux, ly, uy, c))
+
+    max_est_cnt = max(max_est_cnt, c)
+    min_est_cnt = min(min_est_cnt, c)
+
+print("real", min_cnt, max_cnt)
+
+f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=False)
+for bin in bins:
+  a = norm(bin[4], min_cnt, max_cnt)   
+  rect = patches.Rectangle((bin[0], bin[2]), bin[1] - bin[0], bin[3] - bin[2],linewidth=0,edgecolor='r',facecolor='black', alpha=a)
+  ax1.add_patch(rect)
+
+ax1.set_xlim(xmin,xmax)
+ax1.set_ylim(ymin, ymax)
+
+
+print("est", min_est_cnt, max_est_cnt)
+for bin in bins_est:
+  a = norm(bin[4], min_est_cnt, max_est_cnt) 
+  rect = patches.Rectangle((bin[0], bin[2]), bin[1] - bin[0], bin[3] - bin[2],linewidth=0,edgecolor='r',facecolor='black', alpha=a)
+  ax2.add_patch(rect)
+
+ax2.set_xlim(xmin,xmax)
+ax2.set_ylim(ymin, ymax)
+
+ax3.hist2d(a1, a2, bins=20, norm=LogNorm())
+
+plt.show()
 
 f1 = plt.figure()
 ax1 = f1.add_subplot(111)

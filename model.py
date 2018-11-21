@@ -37,9 +37,9 @@ print(train_data[0])  # First training sample, normalized
 
 def build_model():
   model = keras.Sequential([
-    keras.layers.Dense(128, activation=tf.nn.relu,
-                       input_shape=(train_data.shape[1],)),
-    keras.layers.Dense(128, activation=tf.nn.relu),
+    keras.layers.Dense(512, activation=tf.nn.relu, input_shape=(train_data.shape[1],)),
+    keras.layers.Dense(256, activation=tf.sigmoid),
+    keras.layers.Dense(512, activation=tf.nn.relu, kernel_constraint=keras.constraints.NonNeg()),
     keras.layers.Dense(1)
   ])
 
@@ -68,16 +68,16 @@ class PrintDot(keras.callbacks.Callback):
     if epoch % 10 == 0:
       [loss, mae] = model.evaluate(test_data, test_labels, verbose=0)
       print("Testing set Mean Abs Error: {:7.2f}".format(mae))
-      model.save_weights('./checkpoints/gcp_checkpoint')
+      model.save_weights('./checkpoints/my_checkpoint')
 
 EPOCHS = 2000
 
 # Store training stats
-early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=500)
+#early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=500)
 
 history = model.fit(train_data, train_labels, epochs=EPOCHS,
-                    validation_split=0.2, verbose=1,
-                    callbacks=[early_stop, PrintDot(model)])
+                    validation_split=0.0, verbose=1,
+                    callbacks=[PrintDot(model)])
 
 
 def plot_history(history):
