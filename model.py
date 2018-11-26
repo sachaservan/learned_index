@@ -18,14 +18,18 @@ def gen_data(mean, std):
   attr1_bounds = [df['attr1'].min(), df['attr1'].max()]
   attr2_bounds = [df['attr2'].min(), df['attr2'].max()]
   while 1: 
-    attr1_filter = sorted([random.uniform(attr1_bounds[0], attr1_bounds[1]), random.uniform(attr1_bounds[0], attr1_bounds[1])])
-    attr2_filter = sorted([random.uniform(attr2_bounds[0], attr2_bounds[1]), random.uniform(attr2_bounds[0], attr2_bounds[1])])
-    cnt = df[(df['attr1'] >= attr1_filter[0]) & (df['attr1'] < attr1_filter[1]) & (df['attr2'] >= attr2_filter[0]) & (df['attr2'] < attr2_filter[1])].count()
+    table = []
+    labels = []
+    for i in range(10):
+      attr1_filter = sorted([random.uniform(attr1_bounds[0], attr1_bounds[1]), random.uniform(attr1_bounds[0], attr1_bounds[1])])
+      attr2_filter = sorted([random.uniform(attr2_bounds[0], attr2_bounds[1]), random.uniform(attr2_bounds[0], attr2_bounds[1])])
+      cnt = df[(df['attr1'] >= attr1_filter[0]) & (df['attr1'] < attr1_filter[1]) & (df['attr2'] >= attr2_filter[0]) & (df['attr2'] < attr2_filter[1])].count()
 
-    yield [(attr1_filter[0] - mean) / std, 
-            (attr1_filter[1] - mean) / std, 
-            (attr2_filter[0] - mean) / std,
-            (attr2_filter[1] - mean) / std], [cnt[0]]
+      a = [attr1_filter[0], attr1_filter[1], attr2_filter[0], attr2_filter[1]]
+      a = (a - mean) / std
+      table.append(a)
+      labels.append(cnt[0])
+    yield np.array(table), np.array(labels)
 
 def build_model():
   model = keras.Sequential([
@@ -68,7 +72,7 @@ model.summary()
 
 history = model.fit_generator(gen_data(mean, std), epochs=EPOCHS,
                     verbose=1, steps_per_epoch=STEPS_PER_EPOCH,
-                    workers=20, use_multiprocessing=True,
+                    workers=3, use_multiprocessing=True,
                     callbacks=[KerasCallback(model)])
 
 def plot_history(history):
