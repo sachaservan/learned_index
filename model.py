@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import json
 import random
 
-prefix = "my_"
+prefix = "gcp_3_"
 
 def gen_data(mean, std):
   df = pd.read_csv('data_2d_corr.csv')
@@ -65,14 +65,14 @@ pre_computed_train_data = pre_computed_df[['attr1_l', 'attr1_u', 'attr2_l', 'att
 mean = pre_computed_train_data.mean(axis=0)
 std = pre_computed_train_data.std(axis=0)
 
-EPOCHS = 500
+EPOCHS = 500000
 STEPS_PER_EPOCH = 10000
 model = build_model()
 model.summary()
 
 history = model.fit_generator(gen_data(mean, std), epochs=EPOCHS,
                     verbose=1, steps_per_epoch=STEPS_PER_EPOCH,
-                    workers=3, use_multiprocessing=True,
+                    workers=20, use_multiprocessing=True,
                     callbacks=[KerasCallback(model)])
 
 def plot_history(history):
