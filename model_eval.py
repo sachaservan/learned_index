@@ -13,6 +13,8 @@ import json
 from matplotlib.colors import LogNorm
 import matplotlib.patches as patches
 
+prefix = "gcp_2_"
+
 print(tf.__version__)
 
 def norm(v, minv, maxv):
@@ -40,7 +42,7 @@ test_data = (test_data - mean) / std
 
 def build_model():
   model = keras.Sequential([
-    keras.layers.Dense(512, activation=tf.nn.relu, input_shape=(train_data.shape[1],)),
+    keras.layers.Dense(512, activation=tf.nn.relu, input_shape=(4,)),
     keras.layers.Dense(256, activation=tf.sigmoid),
     keras.layers.Dense(512, activation=tf.nn.relu, kernel_constraint=keras.constraints.NonNeg()),
     keras.layers.Dense(1)
@@ -54,7 +56,7 @@ def build_model():
   return model
 
 model = build_model()
-model.load_weights('./checkpoints/my_checkpoint')
+model.load_weights('./checkpoints/' + prefix + 'checkpoint')
 
 [loss, mae] = model.evaluate(test_data, test_labels, verbose=0)
 predictions = model.predict(test_data)
@@ -62,7 +64,7 @@ print(predictions)
 print()
 print("Testing set Mean Abs Error: {:7.2f}".format(mae))
 
-with open('history.json') as f:
+with open(prefix + 'history.json') as f:
     history = json.load(f)
 
 def plot_history(history):
@@ -71,12 +73,12 @@ def plot_history(history):
   plt.ylabel('Mean Abs Error')
   plt.plot(history['epoch'], np.array(history['mean_absolute_error']),
            label='Train Loss')
-  plt.plot(history['epoch'], np.array(history['val_mean_absolute_error']),
-           label = 'Val loss')
+  #plt.plot(history['epoch'], np.array(history['val_mean_absolute_error']),
+  #         label = 'Val loss')
   plt.legend()
   #plt.ylim([0, 75])
 
-if False:
+if True:
   plot_history(history)
   plt.show()
 

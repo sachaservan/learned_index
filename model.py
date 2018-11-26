@@ -9,35 +9,27 @@ from sklearn.model_selection import train_test_split
 import pickle
 import matplotlib.pyplot as plt
 import json
+import random
 
-print(tf.__version__)
+prefix = "my_"
 
-df = pd.read_csv('query_data.csv')
-train, test = train_test_split(df, test_size=0.2)
-train_data = train[['attr1_l', 'attr1_u', 'attr2_l', 'attr2_u']].values
-train_labels = train[['cnt']].values
+def gen_data(mean, std):
+  df = pd.read_csv('data_2d_corr.csv')
+  attr1_bounds = [df['attr1'].min(), df['attr1'].max()]
+  attr2_bounds = [df['attr2'].min(), df['attr2'].max()]
+  while 1: 
+    attr1_filter = sorted([random.uniform(attr1_bounds[0], attr1_bounds[1]), random.uniform(attr1_bounds[0], attr1_bounds[1])])
+    attr2_filter = sorted([random.uniform(attr2_bounds[0], attr2_bounds[1]), random.uniform(attr2_bounds[0], attr2_bounds[1])])
+    cnt = df[(df['attr1'] >= attr1_filter[0]) & (df['attr1'] < attr1_filter[1]) & (df['attr2'] >= attr2_filter[0]) & (df['attr2'] < attr2_filter[1])].count()
 
-test_data = test[['attr1_l', 'attr1_u', 'attr2_l', 'attr2_u']].values
-test_labels = test[['cnt']].values
-
-
-print("Training set: {}".format(train_data.shape))  # 404 examples, 13 features
-print("Testing set:  {}".format(test_data.shape))   # 102 examples, 13 features
-
-print(train_data[0])  # Display sample features, notice the different scales
-
-# Test data is *not* used when calculating the mean and std
-
-mean = train_data.mean(axis=0)
-std = train_data.std(axis=0)
-train_data = (train_data - mean) / std
-test_data = (test_data - mean) / std
-
-print(train_data[0])  # First training sample, normalized
+    yield [(attr1_filter[0] - mean) / std, 
+            (attr1_filter[1] - mean) / std, 
+            (attr2_filter[0] - mean) / std,
+            (attr2_filter[1] - mean) / std], [cnt[0]]
 
 def build_model():
   model = keras.Sequential([
-    keras.layers.Dense(512, activation=tf.nn.relu, input_shape=(train_data.shape[1],)),
+    keras.layers.Dense(512, activation=tf.nn.relu, input_shape=(4,)),
     keras.layers.Dense(256, activation=tf.sigmoid),
     keras.layers.Dense(512, activation=tf.nn.relu, kernel_constraint=keras.constraints.NonNeg()),
     keras.layers.Dense(1)
@@ -50,11 +42,7 @@ def build_model():
                 metrics=['mae'])
   return model
 
-model = build_model()
-model.summary()
-
-# Display training progress by printing a single dot for each completed epoch
-class PrintDot(keras.callbacks.Callback):
+class KerasCallback(keras.callbacks.Callback):
   def __init__(self, model):
     self.model = model
     self.history = {'epoch': [], 'val_loss' : [], 'val_mean_absolute_error' : [], 'loss' : [], 'mean_absolute_error' : []}
@@ -63,22 +51,25 @@ class PrintDot(keras.callbacks.Callback):
       self.history[k].append(logs[k])
     self.history['epoch'].append(epoch)
 
-    with open('history.json', 'w') as outfile:
+    with open(prefix + 'history.json', 'w') as outfile:
       json.dump(self.history, outfile, indent = 4)
     if epoch % 10 == 0:
-      [loss, mae] = model.evaluate(test_data, test_labels, verbose=0)
-      print("Testing set Mean Abs Error: {:7.2f}".format(mae))
-      model.save_weights('./checkpoints/gcp_2_checkpoint')
+      model.save_weights('./checkpoints/' + prefix + 'checkpoint')
 
-EPOCHS = 2000
+pre_computed_df = pd.read_csv('query_data.csv')
+pre_computed_train_data = pre_computed_df[['attr1_l', 'attr1_u', 'attr2_l', 'attr2_u']].values
+mean = pre_computed_train_data.mean(axis=0)
+std = pre_computed_train_data.std(axis=0)
 
-# Store training stats
-#early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=500)
+EPOCHS = 500
+STEPS_PER_EPOCH = 10000
+model = build_model()
+model.summary()
 
-history = model.fit(train_data, train_labels, epochs=EPOCHS,
-                    validation_split=0.0, verbose=1,
-                    callbacks=[PrintDot(model)])
-
+history = model.fit_generator(gen_data(mean, std), epochs=EPOCHS,
+                    verbose=1, steps_per_epoch=STEPS_PER_EPOCH,
+                    workers=20, use_multiprocessing=True,
+                    callbacks=[KerasCallback(model)])
 
 def plot_history(history):
   plt.figure()
