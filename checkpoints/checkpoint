@@ -1,2 +1,2 @@
-model_checkpoint_path: "gcp_4_checkpoint"
-all_model_checkpoint_paths: "gcp_4_checkpoint"
+model_checkpoint_path: "gcp_4_class_checkpoint"
+all_model_checkpoint_paths: "gcp_4_class_checkpoint"
