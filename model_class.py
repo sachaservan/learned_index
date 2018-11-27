@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import json
 import random
 
-prefix = "my_class_"
+prefix = "gcp_4_class_"
 
 def gen_data(mean, std):
   df = pd.read_csv('data_2d_corr.csv')
