@@ -13,7 +13,7 @@ import json
 from matplotlib.colors import LogNorm
 import matplotlib.patches as patches
 
-prefix = "gcp_2_"
+prefix = "gcp_3_"
 
 print(tf.__version__)
 
@@ -102,6 +102,9 @@ min_cnt = float('inf')
 max_est_cnt = float('-inf')
 min_est_cnt = float('inf')
 
+trues = []
+errors = []
+percent = []
 for bx in range(b):
   for by in range(b):
     lx = xmin + ((xmax - xmin) / b) * bx
@@ -121,6 +124,14 @@ for bx in range(b):
     max_est_cnt = max(max_est_cnt, c)
     min_est_cnt = min(min_est_cnt, c)
 
+    trues.append(cnt)
+    errors.append(abs(cnt - c))
+    if cnt != 0:
+      percent.append(abs(cnt - c) / cnt)
+
+print('percent', np.mean(percent))
+print('true cnt', np.mean(trues))
+print('abs mean error', np.mean(errors))
 print("real", min_cnt, max_cnt)
 
 f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=False)
