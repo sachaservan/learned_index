@@ -1,7 +1,5 @@
 import csv
-from random import randint
 import numpy as np
-import math
 
 rows = []
 age = np.random.normal(5, 1, 30000)
@@ -15,5 +13,3 @@ with open('data_2d.csv', 'wb') as myfile:
     wr.writerow(["attr1", "attr2", "pos"])
     for i in range(30000):
         wr.writerow([rows[i][0], rows[i][1], i])
-
-
