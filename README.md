@@ -11,6 +11,12 @@ pip install --upgrade setuptools pip && \
 pip install -r requirements.txt
 ```
 
+Add the hilbert requirement using make.
+
+```
+make hilbert
+```
+
 ## Usage
 
 ```
