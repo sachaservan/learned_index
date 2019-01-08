@@ -6,6 +6,13 @@ from optparse import OptionParser
 
 
 class Node:
+    """Represents a line.
+
+    Children are finer grained Node(s).
+    Max and Min are for ranges.
+    m and b come from the equation y = mx + b
+    """
+
     node_count = 0
 
     def __init__(self):
@@ -18,6 +25,19 @@ class Node:
 
 
 def build_recursive(X, Y, w, d, current_d):
+    """Recursively build Node datastructure.
+
+    Args:
+        X (np.Array): X values
+        Y (np.Array): Y values   
+        w (int): the number of buckets to create
+        d (int): the number of levels of recursion
+        current_d (int): current depth (usage is to call this with 0)
+
+    Returns:
+        Node: Line of best fit for X, Y values 
+    """
+
     X = X.reshape(len(X), 1)
     Y = Y.reshape(len(Y), 1)
 
@@ -55,7 +75,9 @@ def predict_recursive(x, w, d, node):
     if len(node.children) > 0 and node.max - node.min > 0:
         bin = np.floor(((pred - node.min) / (node.max - node.min)) * (w-1))
         bin = bin.astype(int)
-        if bin >= 0 and len(node.children) > bin and node.children[bin] != None:
+        if bin >= 0 and \
+                len(node.children) > bin and \
+                node.children[bin] is not None:
             pred = predict_recursive(x, w, d, node.children[bin])
 
     return pred
