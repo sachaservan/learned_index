@@ -4,6 +4,81 @@ from sklearn import linear_model
 import pandas as pd
 from optparse import OptionParser
 from hilbert import HilbertCurve
+from math import floor
+import os
+import seaborn as sns
+from matplotlib import pyplot as plt
+from sklearn.neighbors import NearestNeighbors
+# read csv -> points
+# TODO determine size of HilbertCurve
+#   maximum point is 2**p-1
+#   minimum point is 0
+#   all points have to be integers
+#
+
+DIM = 2
+NUM_P = 2**10  # 32k
+
+
+def generate_data(dimension=DIM, num_points=NUM_P):
+    max_val = 2**int(np.floor(np.log2(num_points) / 2))
+    print("max val", max_val)
+    points = np.random.rand(num_points, dimension) * max_val
+    df = pd.DataFrame(points, columns=['x', 'y'])
+    df.index.name = 'index'
+    path = os.path.abspath(f'./data_{dimension}d.csv')
+    df.to_csv(path)
+    return path
+
+
+def main():
+    path = generate_data()
+    df = pd.read_csv(path, index_col=['index'])
+    # num_d = len(df.columns); for i in range(num_d)...
+    x = df.iloc[:, [0]]
+    y = df.iloc[:, [1]]
+    xf = np.floor(x).astype(int)
+    yf = np.floor(y).astype(int)
+
+    hp = np.ceil(np.floor(np.log2(NUM_P)) / 2.0).astype(int)
+    curve = HilbertCurve(
+        p=hp, n=DIM)
+
+    plist = np.reshape(np.dstack((xf, yf)), (-1, DIM))
+
+    max_num_points = 2**(hp * 2)
+    out_array = [None] * len(plist)
+
+    print("max points", max_num_points)
+
+    for i, p in enumerate(plist):
+        ind = curve.distance_from_coordinates(p)
+        out_array[i] = (ind, np.asscalar(x.iloc[i]), np.asscalar(y.iloc[i]))
+
+    out_array.sort(key=lambda x: x[0])
+    sns.scatterplot(x=[i[1] for i in out_array],
+                    y=[i[2] for i in out_array],
+                    hue=[i[0] for i in out_array])
+    plt.show()
+
+    n_array = np.array([[x, y] for _, x, y in out_array])
+
+    nbrs = NearestNeighbors(n_neighbors=5, algorithm='brute').fit(n_array)
+    distances, indices = nbrs.kneighbors(n_array)
+
+    # print(distances[:50])
+    print(indices[:50])
+
+    return out_array
+
+
+class Point:
+
+    point_count = 0
+
+    def __init__(self):
+        self.point_count = Point.point_count
+        Point.point_count += 1
 
 
 class Node:
@@ -30,13 +105,13 @@ def build_recursive(X, Y, w, d, current_d):
 
     Args:
         X (np.Array): X values
-        Y (np.Array): Y values   
+        Y (np.Array): Y values
         w (int): the number of buckets to create
         d (int): the number of levels of recursion
         current_d (int): current depth (usage is to call this with 0)
 
     Returns:
-        Node: Line of best fit for X, Y values 
+        Node: Line of best fit for X, Y values
     """
 
     X = X.reshape(len(X), 1)

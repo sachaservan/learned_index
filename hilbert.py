@@ -80,7 +80,8 @@ class HilbertCurve:
                       (n components with values between 0 and 2**p-1)
         """
         if h > self.max_h:
-            raise ValueError('h={} is greater than 2**(p*N)-1={}'.format(h, self.max_h))
+            raise ValueError(
+                'h={} is greater than 2**(p*N)-1={}'.format(h, self.max_h))
         if h < 0:
             raise ValueError('h={} but must be > 0'.format(h))
 
@@ -123,7 +124,8 @@ class HilbertCurve:
         """
         x = list(x_in)
         if len(x) != self.n:
-            raise ValueError('x={} must have N={} dimensions'.format(x, self.n))
+            raise ValueError(
+                'x={} must have N={} dimensions'.format(x, self.n))
 
         if any(elx > self.max_x for elx in x):
             raise ValueError(
