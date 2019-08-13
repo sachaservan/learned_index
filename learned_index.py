@@ -2,7 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn import linear_model
 import pandas as pd
+from random import randint
 from optparse import OptionParser
+from scipy.stats.stats import pearsonr   
 
 
 class Node:
@@ -14,6 +16,8 @@ class Node:
     """
 
     node_count = 0
+    max_depth = 0
+    sum_depth = 0
 
     def __init__(self):
         Node.node_count += 1
@@ -24,7 +28,7 @@ class Node:
         self.min = 0
 
 
-def build_recursive(X, Y, w, d, current_d):
+def build_recursive(X, Y, w, d, current_d, eps, delta):
     """Recursively build Node datastructure.
 
     Args:
@@ -51,8 +55,12 @@ def build_recursive(X, Y, w, d, current_d):
     node.min = np.min(pred)
     node.max = np.max(pred)
 
+    thresh = eps*len(X)
+    numout = sum(i > thresh for i in pred-Y)/float(len(X))
+   
+
     # if desired depth not reached
-    if current_d != d and node.max - node.min > 0:
+    if (current_d != d or numout >= delta)  and node.max - node.min > 0:
         bins = np.floor(((pred - node.min) / (node.max - node.min)) * (w-1))
         bins = bins.astype(int)
         for wi in range(w):
@@ -61,11 +69,15 @@ def build_recursive(X, Y, w, d, current_d):
             Ywi = Y[mask]
 
             if len(Xwi) > 0 and len(Ywi) > 0:
-                child_node = build_recursive(Xwi, Ywi, w, d, current_d + 1)
+                child_node = build_recursive(Xwi, Ywi, w, d, current_d + 1, eps, delta)
                 node.children.append(child_node)
             else:
                 node.children.append(None)
-
+    
+    if Node.max_depth <= current_d:
+        Node.max_depth = current_d +  1         
+    
+    Node.sum_depth += 2
     return node
 
 
@@ -91,23 +103,34 @@ if __name__ == "__main__":
                       default=2, help="depth of the model tree")
     parser.add_option("-w", "--width", dest="width", type="int",
                       default=10, help="width of the model layers")
-
+    parser.add_option("-e", "--epsilon", dest="eps", type="float",
+                      default=0.05, help="error tolerance")
     (options, args) = parser.parse_args()
 
     # load csv and columns
     df = pd.read_csv(options.file)
     Y = df['pos']
     X = df['value']
-    X = X.values.reshape(len(X), 1)
-    Y = Y.values.reshape(len(Y), 1)
+    size = len(Y)
+    for i in range(0, 10):
+        for k in range(0, 100):
+            X = np.append(X, i + randint(0,10))
+            Y = np.append(Y, size+ i*100+k)
+
+    X = np.array(X)
+    X = np.sort(X)
+    Y = np.array(Y)
+    print("Dataset has " + str(len(X)) + " elements.") 
+
+
 
     # setup figures
     f1 = plt.figure()
-    f2 = plt.figure()
+    # f2 = plt.figure()
     ax1 = f1.add_subplot(111)
-    ax2 = f2.add_subplot(111)
-    ax2.set_xlabel('age')
-    ax2.set_ylabel('count')
+    # ax2 = f2.add_subplot(111)
+    # ax2.set_xlabel('age')
+    # ax2.set_ylabel('count')
     ax1.set_xlabel('age')
     ax1.set_ylabel('pos')
 
@@ -117,37 +140,50 @@ if __name__ == "__main__":
     # build learned index model
     d = options.depth  # depth of the recursion
     w = options.width  # width of the layers
-    node = build_recursive(X, Y, w, d, 0)
+    eps = options.eps
+    node = build_recursive(X, Y, w, d, 0, eps, 0.1)
     print("number of nodes in model = " + str(Node.node_count))
+    print("max model depth = " + str(Node.max_depth))
+    print("avg model depth = " + str(Node.sum_depth / float(Node.node_count)))
 
     # predict the cdf
     predictions = []
     testX = np.linspace(np.min(X), np.max(X), 10000)
-    for i in range(len(testX)):
-        pred = predict_recursive(testX[i], w, d, node)
+    for i in range(len(X)):
+        pred = predict_recursive(X[i], w, d, node)
         predictions.append(pred)
 
     # plot the predicted cdf
-    ax1.plot(testX, predictions, color='blue', linewidth=1)
+    ax1.plot(X, predictions, color='blue', linewidth=1)
 
-    # plot the histogram
-    n, bins, patches = ax2.hist(X, 20, facecolor='g', alpha=0.5)
+    # # plot the histogram
+    # n, bins, patches = ax2.hist(X, 20, facecolor='g', alpha=0.5)
+
+    count = 0
+    for i in range(len(X)):
+        pred = int(round(np.round(predict_recursive(X[i], w, d, node))))
+        for k in range(0, 1):
+            if pred + k >= 0 and pred +k< len(X) and X[i] == X[pred+k]:
+                count += 1
+                break
+
+    print("accuracy = " + str(count/float(len(X))))
 
     # predict the histogram
-    counts = []
-    predicted_hist = []
-    for i in range(len(bins) - 1):
-        lower = bins[i]
-        upper = bins[i + 1]
-        pred_upper = predict_recursive(upper, w, d, node)
-        pred_lower = predict_recursive(lower, w, d, node)
-        c = pred_upper - pred_lower
+    # counts = []
+    # predicted_hist = []
+    # for i in range(len(bins) - 1):
+    #     lower = bins[i]
+    #     upper = bins[i + 1]
+    #     pred_upper = predict_recursive(upper, w, d, node)
+    #     pred_lower = predict_recursive(lower, w, d, node)
+    #     c = pred_upper - pred_lower
 
-        predicted_hist.append(lower)
-        predicted_hist.append(upper)
-        counts.append(c)
-        counts.append(c)
-        print("count of " + str(lower) + " to " + str(upper) + " = " + str(c))
-    ax2.plot(predicted_hist, counts, color='blue', linewidth=1)
+    #     predicted_hist.append(lower)
+    #     predicted_hist.append(upper)
+    #     counts.append(c)
+    #     counts.append(c)
+    #     print("count of " + str(lower) + " to " + str(upper) + " = " + str(c))
+    # ax2.plot(predicted_hist, counts, color='blue', linewidth=1)
 
     plt.show()
