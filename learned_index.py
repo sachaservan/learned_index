@@ -37,6 +37,8 @@ def build_recursive(X, Y, w, d, current_d, eps, delta):
         w (int): the number of buckets to create
         d (int): the number of levels of recursion
         current_d (int): current depth (usage is to call this with 0)
+        eps (float): maximum error tolerance (e.g., 0.05) for the index
+        delta (float): maximum probability that error > eps (e.g., 0.1)
 
     Returns:
         Node: Line of best fit for X, Y values 
