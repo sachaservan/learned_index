@@ -107,6 +107,8 @@ if __name__ == "__main__":
                       default=10, help="width of the model layers")
     parser.add_option("-e", "--epsilon", dest="eps", type="float",
                       default=0.05, help="error tolerance")
+    parser.add_option("-e", "--epsilon", dest="eps", type="float",
+                      default=0.05, help="error tolerance")
     (options, args) = parser.parse_args()
 
     # load csv and columns
@@ -123,8 +125,6 @@ if __name__ == "__main__":
     X = np.sort(X)
     Y = np.array(Y)
     print("Dataset has " + str(len(X)) + " elements.") 
-
-
 
     # setup figures
     f1 = plt.figure()
